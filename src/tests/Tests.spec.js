@@ -4,20 +4,19 @@ import http from 'k6/http';
 import { check } from 'k6';
 import { Trend, Rate } from 'k6/metrics';
 
-export const getRequestDuration = new Trend('get_request_duration', true);
-export const RateStatusOK = new Rate('status_OK');
+// Métricas personalizadas
+export const GetProductsDuration = new Trend('get_product_duration', true);
+export const StatusOKRate = new Rate('status_ok_rate');
 
 export const options = {
   thresholds: {
     http_req_failed: ['rate<0.25'],
-    get_request_duration: ['p(90)<6800'],
-    status_OK: ['rate>0.75']
+    get_product_duration: ['p(90)<6800'],
+    status_ok_rate: ['rate>0.75']
   },
-
   stages: [
-    { duration: '30s', target: 7 },
-    { duration: '90s', target: 92 },
-    { duration: '90s', target: 92 }
+    { duration: '1s', target: 7 },
+    { duration: '3m29s', target: 92 }
   ]
 };
 
@@ -33,10 +32,12 @@ export default function () {
 
   const res = http.get(url);
 
-  getRequestDuration.add(res.timings.duration);
-  RateStatusOK.add(res.status === 200);
+  // Métricas
+  GetProductsDuration.add(res.timings.duration);
+  StatusOKRate.add(res.status === 200);
 
+  // Check
   check(res, {
-    'status is 200': () => res.status === 200
+    'GET Products - Status 200': () => res.status === 200
   });
 }
