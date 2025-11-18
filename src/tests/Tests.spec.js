@@ -4,19 +4,20 @@ import http from 'k6/http';
 import { check } from 'k6';
 import { Trend, Rate } from 'k6/metrics';
 
-export const getContactsDuration = new Trend('get_contacts', true);
-export const RateContentOK = new Rate('content_OK');
+export const getRequestDuration = new Trend('get_request_duration', true);
+export const RateStatusOK = new Rate('status_OK');
 
 export const options = {
   thresholds: {
-    http_req_failed: ['rate<0.30'],
-    get_contacts: ['p(99)<500'],
-    content_OK: ['rate>0.95']
+    http_req_failed: ['rate<0.25'],
+    get_request_duration: ['p(90)<6800'],
+    status_OK: ['rate>0.75']
   },
+
   stages: [
-    { duration: '10s', target: 2 },
-    { duration: '10s', target: 4 },
-    { duration: '10s', target: 6 }
+    { duration: '30s', target: 7 },
+    { duration: '90s', target: 92 },
+    { duration: '90s', target: 92 }
   ]
 };
 
@@ -28,23 +29,14 @@ export function handleSummary(data) {
 }
 
 export default function () {
-  const baseUrl = 'https://test.k6.io/';
+  const url = 'https://dummyjson.com/carts';
 
-  const params = {
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  };
+  const res = http.get(url);
 
-  const OK = 200;
-
-  const res = http.get(`${baseUrl}`, params);
-
-  getContactsDuration.add(res.timings.duration);
-
-  RateContentOK.add(res.status === OK);
+  getRequestDuration.add(res.timings.duration);
+  RateStatusOK.add(res.status === 200);
 
   check(res, {
-    'GET Contacts - Status 200': () => res.status === OK
+    'status is 200': () => res.status === 200
   });
 }
